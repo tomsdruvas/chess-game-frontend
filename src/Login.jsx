@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useContext } from "react";
 import AuthContext from "./context/AuthProvider";
 
 import axios from "./api/axios";
-const LOGIN_URL = "/token";
+const LOGIN_URL = "/login";
 
 export const Login = (props) => {
     const {setAuth} = useContext(AuthContext);
@@ -20,6 +20,7 @@ export const Login = (props) => {
             const response = await axios.post(LOGIN_URL, {},
                 {
                     headers: {
+                        "X-Requested-With": "XMLHttpRequest",
                         "Content-Type": "application/json"
                     },
                     auth: {
@@ -37,9 +38,13 @@ export const Login = (props) => {
         setPassword("");
         } catch (err) {
             console.log(JSON.stringify(err));
+             if (!err?.response?.status === false) {
+                setErrMsg("Incorrect username or password.");
+            }
             if(!err?.response) {
                 setErrMsg("No response from server");
             }
+
         }
     }
     
