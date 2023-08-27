@@ -1,15 +1,18 @@
 import React, { useState } from "react";
+import {useNavigate} from "react-router-dom";
 
-export const Register = (props) => {
+export const Register = () => {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [repeatPassword, setRepeatPassword] = useState("");
+    const navigate = useNavigate();
 
     const handleSubmit = (e) => {
         e.preventDefault();
     }
 
-    return (<>    
+    return (<>
+<div className="App">
     <div className="auth-form-container">
         <h2>Register</h2>
 
@@ -22,8 +25,9 @@ export const Register = (props) => {
             <input value={repeatPassword} onChange={(e) => setRepeatPassword(e.target.value)} type="password" placeholder="***********" id="repeatPassword" name="repeatPassword"/>
             <button>Register</button>
         </form>
-        <button className="link-btn" onClick={() => props.onFormSwitch("login")}>Already have an account? Click here to login.</button>
+        <button className="link-btn" onClick={() => navigate("/login")}>Already have an account? Click here to login.</button>
     </div>
+</div>
     </>
     )
 }

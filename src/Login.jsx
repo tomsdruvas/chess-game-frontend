@@ -1,12 +1,14 @@
 import React, { useRef, useState, useEffect, useContext } from "react";
 import AuthContext from "./context/AuthProvider";
 import LoadingGif from ".//gifs/loading2.gif";
-
-import axios from "./api/axios";
+import {useNavigate} from "react-router-dom";
+import useAxiosPrivate from "./hooks/useAxiosPrivate";
 const LOGIN_URL = "/login";
 
-export const Login = (props) => {
+export const Login = () => {
     const {setAuth} = useContext(AuthContext);
+    const axiosPrivate = useAxiosPrivate();
+    const navigate = useNavigate();
 
     const userRef = useRef();
     const errRef = useRef();
@@ -19,7 +21,7 @@ export const Login = (props) => {
         setLoading(false);
         e.preventDefault();
         try {
-            const response = await axios.post(LOGIN_URL, {},
+            const response = await axiosPrivate.post(LOGIN_URL, {},
                 {
                     headers: {
                         "X-Requested-With": "XMLHttpRequest",
@@ -40,6 +42,7 @@ export const Login = (props) => {
         setPassword("");
         setLoading(true);
         setErrMsg("Successfully logged in. Redirecting...");
+        navigate("/chessboard");
 
         } catch (err) {
             console.log(JSON.stringify(err));
@@ -50,7 +53,6 @@ export const Login = (props) => {
             if(!err?.response) {
                 setErrMsg("No response from server");
             }
-
         }
     }
     
@@ -64,11 +66,7 @@ export const Login = (props) => {
  
     return (
         <>
-        {success ? (
-            <div className="auth-form-container">
-                <strong>Success!</strong> You have successfully logged in.
-            </div>
-        ) : (
+<div className="App">
     <div className="auth-form-container">
         <picture>
             <img src={LoadingGif} width={25} hidden={loading} alt={"loading"}/>
@@ -83,9 +81,10 @@ export const Login = (props) => {
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="***********" id="password" name="password" />
             <button>Log In</button>
         </form>
-    <button className="link-btn" onClick={() => props.onFormSwitch("register")}>Don't have an account? Click here to register.</button>
+    <button className="link-btn" onClick={() => navigate("/register")}>Don't have an account? Click here to register.</button>
     </div>
-        )}
+</div>
+
     </>
     )
 }
