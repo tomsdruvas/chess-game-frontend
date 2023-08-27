@@ -7,7 +7,6 @@ export const Register = (props) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log(username + password + repeatPassword);
     }
 
     return (<>    
