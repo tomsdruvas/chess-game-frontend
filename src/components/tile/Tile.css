@@ -11,3 +11,7 @@
 .white-tile {
     background-color: azure;
 }
+
+.available-tile {
+    background-color: red;
+}
