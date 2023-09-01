@@ -1,12 +1,13 @@
-import React, { useRef, useState, useEffect, useContext } from "react";
-import AuthContext from "./context/AuthProvider";
-import LoadingGif from ".//gifs/loading2.gif";
+import React, {useEffect, useRef, useState} from "react";
+import LoadingGif from "../gifs/loading2.gif";
 import {useNavigate} from "react-router-dom";
-import useAxiosPrivate from "./hooks/useAxiosPrivate";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import useAuth from "../hooks/useAuth";
+
 const LOGIN_URL = "/login";
 
 export const Login = () => {
-    const {setAuth} = useContext(AuthContext);
+    const { setAuth } = useAuth();
     const axiosPrivate = useAxiosPrivate();
     const navigate = useNavigate();
 
@@ -35,8 +36,9 @@ export const Login = () => {
                 }
             );
             console.log(JSON.stringify(response));
-            const accessToken = response.data.access_token;
-            setAuth({username: username, password: password, accessToken});
+            const accessToken = response?.data?.accessToken;
+            const roles = response?.data?.roles;
+            setAuth({username, password, roles, accessToken});
 
         setUsername("");
         setPassword("");

@@ -1,0 +1,13 @@
+.tile {
+    width: 100px;
+    height: 100px;
+
+}
+
+.black-tile {
+    background-color: darkcyan;
+}
+
+.white-tile {
+    background-color: azure;
+}
