@@ -35,10 +35,9 @@ export const Login = () => {
                     withCredentials: true
                 }
             );
-            console.log(JSON.stringify(response));
             const accessToken = response?.data?.accessToken;
             const roles = response?.data?.roles;
-            setAuth({username, password, roles, accessToken});
+            setAuth({username, roles, accessToken});
 
         setUsername("");
         setPassword("");

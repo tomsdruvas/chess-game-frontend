@@ -11,10 +11,10 @@ const horizontalAxis = [0, 1, 2, 3, 4, 5, 6, 7];
 export const Chessboard = () => {
     const axiosPrivate = useAxiosPrivate();
     const [chessBoard, setChessBoard] = useState([]);
+    const [chessBoardPlayers, setChessBoardPlayers] = useState({});
     const [pieceSelected, setPieceSelected] = useState({});
     const [availableMoves, setAvailableMoves] = useState([]);
-    const { auth } = useAuth();
-
+    const {auth} = useAuth();
 
 
     const handleStartGame = async (e) => {
@@ -29,6 +29,7 @@ export const Chessboard = () => {
                 }
             );
             setChessBoard(response?.data?.Squares);
+            setChessBoardPlayers(response?.data?.Players)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
@@ -39,19 +40,20 @@ export const Chessboard = () => {
     }
 
     const selectPieceCallback = (pieceSelected) => {
-        if(chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece.type !== "emptypiece") {
-            setPieceSelected(pieceSelected)
-            findAvailableMoves(pieceSelected)
-            console.log(JSON.stringify("Setting piece selected active"))
-            console.log(JSON.stringify(pieceSelected))
-            // console.log(JSON.stringify(auth))
+        if (chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece.type !== "emptypiece") {
+            if ((chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece?.colour === "white" && auth.username === chessBoardPlayers?.PlayerOneUsername) || (chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece?.colour === "black" && auth.username === chessBoardPlayers?.PlayerTwoUsername)) {
+                setPieceSelected(pieceSelected)
+                findAvailableMoves(pieceSelected)
+            }
         }
     }
 
     const findAvailableMoves = (pieceSelected) => {
-        if(pieceSelected) {
-            setAvailableMoves(chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece?.legalMoves.map(({row, column}) => {
-                console.log(JSON.stringify("Finding legal moves " + row + column))
+        if (pieceSelected) {
+            setAvailableMoves(chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece?.legalMoves.map(({
+                                                                                                                      row,
+                                                                                                                      column
+                                                                                                                  }) => {
                 return {row: row, column: column};
             }))
         }
@@ -62,12 +64,14 @@ export const Chessboard = () => {
     for (let j = verticalAxis.length - 1; j >= 0; j--) {
         for (const column of horizontalAxis) {
             const pieceName = getPieceName(verticalAxis[j], column);
-            board.push(<Tile row={verticalAxis[j]}
-                             column={column}
-                             pieceName={pieceName}
-                             pieceSelected={pieceSelected}
-                             selectPieceCallback={selectPieceCallback}
-                             availableMoves={availableMoves}/>)
+            board.push(<Tile
+                key={`${verticalAxis[j]}${column}`}
+                row={verticalAxis[j]}
+                column={column}
+                pieceName={pieceName}
+                pieceSelected={pieceSelected}
+                selectPieceCallback={selectPieceCallback}
+                availableMoves={availableMoves}/>)
         }
     }
 
