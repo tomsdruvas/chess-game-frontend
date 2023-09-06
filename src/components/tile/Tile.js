@@ -1,6 +1,6 @@
 import "./Tile.css"
 
-export const Tile = ({pieceName, row, column, selectPieceCallback, availableMoves}) => {
+export const Tile = ({pieceName, row, column, selectTileCallback, availableMoves}) => {
     let tileColour;
     if (availableMoves?.find(element => element.row === row && element.column === column)) {
         tileColour = "available"
@@ -11,7 +11,7 @@ export const Tile = ({pieceName, row, column, selectPieceCallback, availableMove
     }
 
     const handleCallback = () => {
-            return selectPieceCallback({
+            return selectTileCallback({
                 row: row,
                 column: column
             });

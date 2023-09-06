@@ -1,21 +1,29 @@
-import React, {useState} from "react";
+import React, {useRef, useState} from "react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import "./Chessboard.css"
 import {Tile} from "../tile/Tile";
 import useAuth from "../../hooks/useAuth";
 
 const BOARD_URL = "/board";
+const MAKE_MOVE_URL = "/make-a-move/";
+const JOIN_GAME_URL = "/add-player-two-board/"
+
 const verticalAxis = [7, 6, 5, 4, 3, 2, 1, 0];
 const horizontalAxis = [0, 1, 2, 3, 4, 5, 6, 7];
 
 export const Chessboard = () => {
     const axiosPrivate = useAxiosPrivate();
+    const userRef = useRef();
+
     const [chessBoard, setChessBoard] = useState([]);
     const [chessBoardPlayers, setChessBoardPlayers] = useState({});
-    const [pieceSelected, setPieceSelected] = useState({});
+    const [currentPlayerColour, setCurrentPlayerColour] = useState("{}");
+    const [chessBoardId, setChessBoardId] = useState("");
+    const [tileSelected, setTileSelected] = useState({});
+    const [isTileSelected, setTileIsSelected] = useState(false);
     const [availableMoves, setAvailableMoves] = useState([]);
-    const {auth} = useAuth();
 
+    const {auth} = useAuth();
 
     const handleStartGame = async (e) => {
         e.preventDefault();
@@ -30,6 +38,50 @@ export const Chessboard = () => {
             );
             setChessBoard(response?.data?.Squares);
             setChessBoardPlayers(response?.data?.Players)
+            setChessBoardId(response?.data?.BoardId)
+            setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
+        } catch (err) {
+            console.log(JSON.stringify(err));
+        }
+    }
+
+    const handleMovePiece = async (destinationSquare) => {
+        try {
+            const response = await axiosPrivate.post(MAKE_MOVE_URL + chessBoardId, {
+                    "currentRow": tileSelected.row,
+                    "currentColumn": tileSelected.column,
+                    "newRow": destinationSquare.row,
+                    "newColumn": destinationSquare.column
+                },
+                {
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+            setChessBoard(response?.data?.Squares)
+            setChessBoardPlayers(response?.data?.Players)
+            setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
+        } catch (err) {
+            console.log(JSON.stringify(err));
+        }
+    }
+
+    const handleJoinGame = async (e) => {
+        e.preventDefault();
+
+        try {
+            const response = await axiosPrivate.post(JOIN_GAME_URL + chessBoardId, {},
+                {
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+            setChessBoard(response?.data?.Squares);
+            setChessBoardPlayers(response?.data?.Players)
+            setChessBoardId(response?.data?.BoardId)
+            setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
@@ -39,21 +91,46 @@ export const Chessboard = () => {
         return chessBoard?.at(row)?.at(column)?.piece?.name;
     }
 
-    const selectPieceCallback = (pieceSelected) => {
-        if (chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece.type !== "emptypiece") {
-            if ((chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece?.colour === "white" && auth.username === chessBoardPlayers?.PlayerOneUsername) || (chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece?.colour === "black" && auth.username === chessBoardPlayers?.PlayerTwoUsername)) {
-                setPieceSelected(pieceSelected)
-                findAvailableMoves(pieceSelected)
+    const selectTileCallback = async (newTileSelected) => {
+        if (isTileSelected && newTileSelected.row === tileSelected.row && newTileSelected.column === tileSelected.column) {
+            resetTileSelectedState()
+        } else if (!isTileSelected || findPieceColourFromTile(newTileSelected) === currentPlayerColour) {
+            if (chessBoardPlayers?.ActivePlayerUsername === auth.username) {
+                if ((findPieceColourFromTile(newTileSelected) === "white" && auth.username === chessBoardPlayers?.PlayerOneUsername) || (findPieceColourFromTile(newTileSelected) === "black" && auth.username === chessBoardPlayers?.PlayerTwoUsername)) {
+                    setTileSelected(newTileSelected)
+                    setTileIsSelected(true)
+                    findAvailableMoves(newTileSelected)
+                }
             }
+        } else if (isTileSelected && !findInAvailableMoves(newTileSelected)) {
+            resetTileSelectedState()
+        } else if (isTileSelected && findInAvailableMoves(newTileSelected)) {
+            await handleMovePiece(newTileSelected)
+            resetTileSelectedState()
         }
+        // if tile is selected and tile with illegal move is selected show a pop-up with illegal move warning
     }
 
-    const findAvailableMoves = (pieceSelected) => {
-        if (pieceSelected) {
-            setAvailableMoves(chessBoard?.at(pieceSelected.row)?.at(pieceSelected.column)?.piece?.legalMoves.map(({
-                                                                                                                      row,
-                                                                                                                      column
-                                                                                                                  }) => {
+    const resetTileSelectedState = () => {
+        setTileSelected({})
+        setTileIsSelected(false)
+        setAvailableMoves([])
+    }
+
+    const findInAvailableMoves = (inputTile) => {
+        return availableMoves.find((element) => element.row === inputTile.row && element.column === inputTile.column)
+    }
+
+    const findPieceColourFromTile = (inputTile) => {
+        return chessBoard?.at(inputTile.row)?.at(inputTile.column)?.piece?.colour
+    }
+
+    const findAvailableMoves = (tileSelected) => {
+        if (tileSelected) {
+            setAvailableMoves(chessBoard?.at(tileSelected.row)?.at(tileSelected.column)?.piece?.legalMoves.map(({
+                                                                                                                    row,
+                                                                                                                    column
+                                                                                                                }) => {
                 return {row: row, column: column};
             }))
         }
@@ -69,9 +146,27 @@ export const Chessboard = () => {
                 row={verticalAxis[j]}
                 column={column}
                 pieceName={pieceName}
-                pieceSelected={pieceSelected}
-                selectPieceCallback={selectPieceCallback}
+                pieceSelected={tileSelected}
+                selectTileCallback={selectTileCallback}
                 availableMoves={availableMoves}/>)
+        }
+    }
+
+    const handleUpdateGame = async () => {
+        try {
+            const response = await axiosPrivate.get(BOARD_URL + "/" + chessBoardId,
+                {
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+            setChessBoard(response?.data?.Squares);
+            setChessBoardPlayers(response?.data?.Players)
+            setChessBoardId(response?.data?.BoardId)
+            setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
+        } catch (err) {
+            console.log(JSON.stringify(err));
         }
     }
 
@@ -82,6 +177,12 @@ export const Chessboard = () => {
             <div id="chessboard">
                 {board}
             </div>
+            <form className="join-game" onSubmit={handleJoinGame}>
+                <label htmlFor="BoardId">BoardId: </label>
+                <input value={chessBoardId} onChange={(e) => setChessBoardId(e.target.value)} type="Board ID" placeholder="Board ID" id="Board ID" name="Board ID" autoComplete="off" ref={userRef} required/>
+                <button>Join Game</button>
+            </form>
+            <button onClick={handleUpdateGame}>Update Game</button>
         </>
     )
 }
