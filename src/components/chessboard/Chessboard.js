@@ -17,11 +17,13 @@ export const Chessboard = () => {
 
     const [chessBoard, setChessBoard] = useState([]);
     const [chessBoardPlayers, setChessBoardPlayers] = useState({});
-    const [currentPlayerColour, setCurrentPlayerColour] = useState("{}");
+    const [currentPlayerColour, setCurrentPlayerColour] = useState("");
     const [chessBoardId, setChessBoardId] = useState("");
     const [tileSelected, setTileSelected] = useState({});
     const [isTileSelected, setTileIsSelected] = useState(false);
     const [availableMoves, setAvailableMoves] = useState([]);
+    const [isPawnPromotionAvailable, setIsPawnPromotionAvailable] = useState(false);
+    const [latestMove, setLatestMove] = useState({});
 
     const {auth} = useAuth();
 
@@ -36,10 +38,7 @@ export const Chessboard = () => {
                     }
                 }
             );
-            setChessBoard(response?.data?.Squares);
-            setChessBoardPlayers(response?.data?.Players)
-            setChessBoardId(response?.data?.BoardId)
-            setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
+            setChessBoardStates(response)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
@@ -59,9 +58,7 @@ export const Chessboard = () => {
                     }
                 }
             );
-            setChessBoard(response?.data?.Squares)
-            setChessBoardPlayers(response?.data?.Players)
-            setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
+            setChessBoardStates(response)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
@@ -78,10 +75,7 @@ export const Chessboard = () => {
                     }
                 }
             );
-            setChessBoard(response?.data?.Squares);
-            setChessBoardPlayers(response?.data?.Players)
-            setChessBoardId(response?.data?.BoardId)
-            setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
+            setChessBoardStates(response)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
@@ -92,7 +86,9 @@ export const Chessboard = () => {
     }
 
     const selectTileCallback = async (newTileSelected) => {
-        if (isTileSelected && newTileSelected.row === tileSelected.row && newTileSelected.column === tileSelected.column) {
+        if (isPawnPromotionAvailable) {
+            setIsPawnPromotionAvailable(false)
+        } else if (checkIfAlreadySelectedTileIsBeingSelected(newTileSelected)) {
             resetTileSelectedState()
         } else if (!isTileSelected || findPieceColourFromTile(newTileSelected) === currentPlayerColour) {
             if (chessBoardPlayers?.ActivePlayerUsername === auth.username) {
@@ -106,9 +102,18 @@ export const Chessboard = () => {
             resetTileSelectedState()
         } else if (isTileSelected && findInAvailableMoves(newTileSelected)) {
             await handleMovePiece(newTileSelected)
+            setLatestMove(newTileSelected)
             resetTileSelectedState()
         }
         // if tile is selected and tile with illegal move is selected show a pop-up with illegal move warning
+    }
+
+    const checkIfAlreadySelectedTileIsBeingSelected = (newTileSelected) => {
+        return isTileSelected && newTileSelected.row === tileSelected.row && newTileSelected.column === tileSelected.column
+    }
+
+    const checkIfTileHasOwnPlayersPieceOnIt = (newTileSelected) => {
+        return !isTileSelected || findPieceColourFromTile(newTileSelected) === currentPlayerColour
     }
 
     const resetTileSelectedState = () => {
@@ -148,7 +153,9 @@ export const Chessboard = () => {
                 pieceName={pieceName}
                 pieceSelected={tileSelected}
                 selectTileCallback={selectTileCallback}
-                availableMoves={availableMoves}/>)
+                availableMoves={availableMoves}
+                isPawnPromotionAvailable={isPawnPromotionAvailable}
+                latestMove={latestMove}/>)
         }
     }
 
@@ -161,13 +168,18 @@ export const Chessboard = () => {
                     }
                 }
             );
-            setChessBoard(response?.data?.Squares);
-            setChessBoardPlayers(response?.data?.Players)
-            setChessBoardId(response?.data?.BoardId)
-            setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
+            setChessBoardStates(response)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
+    }
+
+    const setChessBoardStates = (response) => {
+        setChessBoard(response?.data?.Squares);
+        setChessBoardPlayers(response?.data?.Players)
+        setChessBoardId(response?.data?.BoardId)
+        setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
+        setIsPawnPromotionAvailable(response?.data?.PawnPromotionPending)
     }
 
     return (
