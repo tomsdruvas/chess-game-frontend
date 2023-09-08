@@ -90,9 +90,9 @@ export const Chessboard = () => {
             setIsPawnPromotionAvailable(false)
         } else if (checkIfAlreadySelectedTileIsBeingSelected(newTileSelected)) {
             resetTileSelectedState()
-        } else if (!isTileSelected || findPieceColourFromTile(newTileSelected) === currentPlayerColour) {
-            if (chessBoardPlayers?.ActivePlayerUsername === auth.username) {
-                if ((findPieceColourFromTile(newTileSelected) === "white" && auth.username === chessBoardPlayers?.PlayerOneUsername) || (findPieceColourFromTile(newTileSelected) === "black" && auth.username === chessBoardPlayers?.PlayerTwoUsername)) {
+        } else if (checkIfTileHasOwnPlayersPieceOnIt(newTileSelected)) {
+            if (checkIfLoggedInUserIsTheActivePlayer()) {
+                if (checkIfPlayerNumberAndPieceColourMatchUp(newTileSelected)) {
                     setTileSelected(newTileSelected)
                     setTileIsSelected(true)
                     findAvailableMoves(newTileSelected)
@@ -106,6 +106,15 @@ export const Chessboard = () => {
             resetTileSelectedState()
         }
         // if tile is selected and tile with illegal move is selected show a pop-up with illegal move warning
+        // refresh token exception needs to be fixed
+    }
+
+    const checkIfPlayerNumberAndPieceColourMatchUp = (newTileSelected) => {
+        return (findPieceColourFromTile(newTileSelected) === "white" && auth.username === chessBoardPlayers?.PlayerOneUsername) || (findPieceColourFromTile(newTileSelected) === "black" && auth.username === chessBoardPlayers?.PlayerTwoUsername)
+    }
+
+    const checkIfLoggedInUserIsTheActivePlayer = () => {
+        return chessBoardPlayers?.ActivePlayerUsername === auth.username
     }
 
     const checkIfAlreadySelectedTileIsBeingSelected = (newTileSelected) => {
@@ -191,7 +200,8 @@ export const Chessboard = () => {
             </div>
             <form className="join-game" onSubmit={handleJoinGame}>
                 <label htmlFor="BoardId">BoardId: </label>
-                <input value={chessBoardId} onChange={(e) => setChessBoardId(e.target.value)} type="Board ID" placeholder="Board ID" id="Board ID" name="Board ID" autoComplete="off" ref={userRef} required/>
+                <input value={chessBoardId} onChange={(e) => setChessBoardId(e.target.value)} type="Board ID"
+                       placeholder="Board ID" id="Board ID" name="Board ID" autoComplete="off" ref={userRef} required/>
                 <button>Join Game</button>
             </form>
             <button onClick={handleUpdateGame}>Update Game</button>
