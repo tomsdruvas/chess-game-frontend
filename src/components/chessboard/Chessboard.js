@@ -7,6 +7,7 @@ import useAuth from "../../hooks/useAuth";
 const BOARD_URL = "/board";
 const MAKE_MOVE_URL = "/make-a-move/";
 const JOIN_GAME_URL = "/add-player-two-board/"
+const PAWN_PROMOTION_URL = "/promote-pawn/"
 
 const verticalAxis = [7, 6, 5, 4, 3, 2, 1, 0];
 const horizontalAxis = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -64,6 +65,23 @@ export const Chessboard = () => {
         }
     }
 
+    const handlePromotePawnCallback = async (upgradedPieceName) => {
+        try {
+            const response = await axiosPrivate.post(PAWN_PROMOTION_URL + chessBoardId, {
+                    "upgradedPieceName": upgradedPieceName
+                },
+                {
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+            setChessBoardStates(response)
+        } catch (err) {
+            console.log(JSON.stringify(err));
+        }
+    }
+
     const handleJoinGame = async (e) => {
         e.preventDefault();
 
@@ -81,13 +99,19 @@ export const Chessboard = () => {
         }
     }
 
-    const getPieceName = (row, column) => {
-        return chessBoard?.at(row)?.at(column)?.piece?.name;
+    const getPieceType = (row, column) => {
+        const type = chessBoard?.at(row)?.at(column)?.piece?.type;
+        const colour = chessBoard?.at(row)?.at(column)?.piece?.colour;
+
+        if(type === "emptypiece") {
+            return "";
+        }
+        return colour + " " + type;
     }
 
     const selectTileCallback = async (newTileSelected) => {
-        if (isPawnPromotionAvailable) {
-            setIsPawnPromotionAvailable(false)
+        if (isPawnPromotionAvailable && checkIfLoggedInUserIsTheActivePlayer()) {
+            // setIsPawnPromotionAvailable(false)
         } else if (checkIfAlreadySelectedTileIsBeingSelected(newTileSelected)) {
             resetTileSelectedState()
         } else if (checkIfTileHasOwnPlayersPieceOnIt(newTileSelected)) {
@@ -106,7 +130,6 @@ export const Chessboard = () => {
             resetTileSelectedState()
         }
         // if tile is selected and tile with illegal move is selected show a pop-up with illegal move warning
-        // refresh token exception needs to be fixed
     }
 
     const checkIfPlayerNumberAndPieceColourMatchUp = (newTileSelected) => {
@@ -154,7 +177,7 @@ export const Chessboard = () => {
 
     for (let j = verticalAxis.length - 1; j >= 0; j--) {
         for (const column of horizontalAxis) {
-            const pieceName = getPieceName(verticalAxis[j], column);
+            const pieceName = getPieceType(verticalAxis[j], column);
             board.push(<Tile
                 key={`${verticalAxis[j]}${column}`}
                 row={verticalAxis[j]}
@@ -164,7 +187,9 @@ export const Chessboard = () => {
                 selectTileCallback={selectTileCallback}
                 availableMoves={availableMoves}
                 isPawnPromotionAvailable={isPawnPromotionAvailable}
-                latestMove={latestMove}/>)
+                latestMove={latestMove}
+                userLoggedInActivePlayer={checkIfLoggedInUserIsTheActivePlayer()}
+                handlePromotePawnCallback={handlePromotePawnCallback}/>)
         }
     }
 
