@@ -13,7 +13,7 @@ export const Tile = ({
                          handlePromotePawnCallback
                      }) => {
     let tileColour;
-    if (isPawnPromotionAvailable && latestMove.row === row && latestMove.column === column && userLoggedInActivePlayer) {
+    if (isPawnPromotionAvailable && latestMove.Row === row && latestMove.Column === column && userLoggedInActivePlayer) {
         tileColour = "pawnPromotion"
     } else if (availableMoves?.find(element => element.row === row && element.column === column)) {
         tileColour = "available"
@@ -30,7 +30,7 @@ export const Tile = ({
         });
     };
 
-    if (isPawnPromotionAvailable && latestMove.row === row && latestMove.column === column && userLoggedInActivePlayer) {
+    if (isPawnPromotionAvailable && latestMove.Row === row && latestMove.Column === column && userLoggedInActivePlayer) {
         pieceName = <Popup wide trigger={<Button content='Promote Pawn'/>} on='click'>
             <Grid divided columns='equal'>
                 <Grid.Column>

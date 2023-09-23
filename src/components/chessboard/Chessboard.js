@@ -3,13 +3,15 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import "./Chessboard.css"
 import {Tile} from "../tile/Tile";
 import useAuth from "../../hooks/useAuth";
+import SockJS from 'sockjs-client';
+import Stomp from 'stompjs';
 
 const BOARD_URL = "/board";
 const MAKE_MOVE_URL = "/make-a-move/";
 const JOIN_GAME_URL = "/add-player-two-board/"
 const PAWN_PROMOTION_URL = "/promote-pawn/"
 
-const verticalAxis = [7, 6, 5, 4, 3, 2, 1, 0];
+const verticalAxis = [0, 1, 2, 3, 4, 5, 6, 7];
 const horizontalAxis = [0, 1, 2, 3, 4, 5, 6, 7];
 
 export const Chessboard = () => {
@@ -40,6 +42,7 @@ export const Chessboard = () => {
                 }
             );
             setChessBoardStates(response)
+            connectToWs(response?.data?.BoardId)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
@@ -59,7 +62,7 @@ export const Chessboard = () => {
                     }
                 }
             );
-            setChessBoardStates(response)
+            // setChessBoardStates(response)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
@@ -94,25 +97,26 @@ export const Chessboard = () => {
                 }
             );
             setChessBoardStates(response)
+            connectToWs(chessBoardId)
         } catch (err) {
             console.log(JSON.stringify(err));
         }
     }
 
     const getPieceType = (row, column) => {
-        const type = chessBoard?.at(row)?.at(column)?.piece?.type;
-        const colour = chessBoard?.at(row)?.at(column)?.piece?.colour;
+        let type = chessBoard?.at(row)?.at(column)?.piece?.type;
+        let colour = chessBoard?.at(row)?.at(column)?.piece?.colour;
+        type = type ?? "";
+        colour = colour ?? "";
 
-        if(type === "emptypiece") {
+        if (type === "emptypiece") {
             return "";
         }
         return colour + " " + type;
     }
 
     const selectTileCallback = async (newTileSelected) => {
-        if (isPawnPromotionAvailable && checkIfLoggedInUserIsTheActivePlayer()) {
-            // setIsPawnPromotionAvailable(false)
-        } else if (checkIfAlreadySelectedTileIsBeingSelected(newTileSelected)) {
+        if (checkIfAlreadySelectedTileIsBeingSelected(newTileSelected)) {
             resetTileSelectedState()
         } else if (checkIfTileHasOwnPlayersPieceOnIt(newTileSelected)) {
             if (checkIfLoggedInUserIsTheActivePlayer()) {
@@ -126,7 +130,6 @@ export const Chessboard = () => {
             resetTileSelectedState()
         } else if (isTileSelected && findInAvailableMoves(newTileSelected)) {
             await handleMovePiece(newTileSelected)
-            setLatestMove(newTileSelected)
             resetTileSelectedState()
         }
         // if tile is selected and tile with illegal move is selected show a pop-up with illegal move warning
@@ -175,7 +178,7 @@ export const Chessboard = () => {
 
     let board = [];
 
-    for (let j = verticalAxis.length - 1; j >= 0; j--) {
+    for (let j = 0; j <= verticalAxis.length - 1; j++) {
         for (const column of horizontalAxis) {
             const pieceName = getPieceType(verticalAxis[j], column);
             board.push(<Tile
@@ -214,6 +217,34 @@ export const Chessboard = () => {
         setChessBoardId(response?.data?.BoardId)
         setCurrentPlayerColour(response?.data?.CurrentPlayerColour)
         setIsPawnPromotionAvailable(response?.data?.PawnPromotionPending)
+        setLatestMove(response?.data?.LatestMove)
+    }
+
+    const setChessBoardStatesWs = (response) => {
+        setChessBoard(response?.Squares);
+        setChessBoardPlayers(response?.Players)
+        setChessBoardId(response?.BoardId)
+        setCurrentPlayerColour(response?.CurrentPlayerColour)
+        setIsPawnPromotionAvailable(response?.PawnPromotionPending)
+        setLatestMove(response?.LatestMove)
+    }
+
+    const connectToWs = (chessBoardId) => {
+        let sock = new SockJS('http://localhost:8080/ws');
+        let stompClient = Stomp.over(sock);
+        stompClient.debug = () => {};
+        sock.onopen = function () {
+            console.log('open');
+        }
+
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe("/topic/game-progress/" + chessBoardId, function (response) {
+                const data = JSON.parse(response.body);
+                setChessBoardStatesWs(data)
+                //you can execute any function here
+            });
+        });
     }
 
     return (
