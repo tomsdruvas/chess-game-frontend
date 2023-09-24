@@ -230,15 +230,17 @@ export const Chessboard = () => {
     }
 
     const connectToWs = (chessBoardId) => {
-        let sock = new SockJS('http://localhost:8080/ws');
+        const WEBSOCKET_URL = 'http://localhost:8080/ws?access_token=' + `${auth?.accessToken}`;
+        let sock = new SockJS(WEBSOCKET_URL);
         let stompClient = Stomp.over(sock);
-        stompClient.debug = () => {};
+        // stompClient.debug = () => {};
         sock.onopen = function () {
             console.log('open');
         }
 
         stompClient.connect({}, function (frame) {
             console.log('Connected: ' + frame);
+
             stompClient.subscribe("/topic/game-progress/" + chessBoardId, function (response) {
                 const data = JSON.parse(response.body);
                 setChessBoardStatesWs(data)
